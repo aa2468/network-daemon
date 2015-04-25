@@ -77,24 +77,37 @@ int main(int argc, char** argv) {
 
 //handel client
 void* handel_client(void* arg){
+    
+    
     //connect socket to client
     int client_socket = *((int*)arg);
     char input;
-    int done = 0;
+    int counter =0;
+    int num =0;
     
-    while(!done){
-        // read char from client
-        read(client_socket,&input,sizeof(char));
-        printf("%c", input);
-        
-        if (input == 'q'){
-            write(client_socket,&input,sizeof(char));
-            break;
+    // read char from client
+    read(client_socket,&input,sizeof(char));
+    num = atoi(&input);
+    
+    
+    while (num != 1) {
+        syslog(LOG_NOTICE,"input is %d \n",num);
+        push(num);
+        if (num % 2 == 0) { //if even
+            num = num / 2;
+        } else { //if odd
+            num = num * 3 + 1;
         }
-        // send result to client
-        write(client_socket,&input,sizeof(char));
-
     }
+    while (pop()!= -1) {
+        counter+=1;
+    }
+    counter = counter -1 ;
+    
+    // send result to client
+    write(client_socket,&counter,sizeof(char));
+    syslog(LOG_NOTICE,"result is %d \n",counter);
+    pthread_exit(NULL);
     
     if (close(client_socket)==-1){
         perror("Error Colsing socket");
@@ -102,7 +115,9 @@ void* handel_client(void* arg){
     }else{
         syslog(LOG_NOTICE,"Closed socket to client");
     }
-    pthread_exit(NULL);
+    
+    
+    
 }
 
 
