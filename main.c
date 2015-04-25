@@ -22,6 +22,9 @@ STACK s;
 void push(int);
 int  pop(void);
 
+// Create a mutex
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 int main(int argc, char** argv) {
     
@@ -62,23 +65,37 @@ int main(int argc, char** argv) {
         syslog(LOG_NOTICE,"server with PID %d: accepted client\n", getpid());
         
         //create the thread to handel
-        pthread_t thread;
-        if(pthread_create(&thread, NULL,handel_client,(void*)&client_socket)!=0)
-        {
-            syslog(LOG_NOTICE,"server with PID %d: error creating the thread\n", getpid());
+        pthread_t threads [1];
+        // Launch threads
+        for(int i=0; i<sizeof(threads)/sizeof(threads[0]); ++i) {
+            if(pthread_create(&threads[i], NULL,handel_client,(void*)&client_socket)!= 0) {
+                syslog(LOG_NOTICE,"server with PID %d: error creating the thread\n", getpid());
+                exit(EXIT_FAILURE);
+            }
+        }
+        
+        // Wait for threads to finish
+        for(int i=0; i<sizeof(threads)/sizeof(threads[0]); ++i) {
+            if(pthread_join(threads[i],NULL) != 0) {
+                perror("Thread join failed");
+                exit(EXIT_FAILURE);
+            }
+        }
+        
+        // Release the mutex
+        if(pthread_mutex_destroy(&mutex) != 0) {
+            perror("Destroy mutex");
             exit(EXIT_FAILURE);
         }
-        if(pthread_detach(thread) !=0){
-            syslog(LOG_NOTICE,"server with PID %d: error detching thread\n", getpid());
-            exit(EXIT_FAILURE);
-        }
+        
+        
     }
 }
 
 //handel client
 void* handel_client(void* arg){
     
-    
+    pthread_mutex_lock(&mutex);
     //connect socket to client
     int client_socket = *((int*)arg);
     char input;
@@ -107,6 +124,7 @@ void* handel_client(void* arg){
     // send result to client
     write(client_socket,&counter,sizeof(char));
     syslog(LOG_NOTICE,"result is %d \n",counter);
+    pthread_mutex_unlock(&mutex);
     pthread_exit(NULL);
     
     if (close(client_socket)==-1){
