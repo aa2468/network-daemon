@@ -9,6 +9,19 @@
 
 
 #include "daemon.c"
+#define MAXSIZE 20
+
+struct stack
+{
+    int stk[MAXSIZE];
+    int top;
+};
+typedef struct stack STACK;
+STACK s;
+
+void push(int);
+int  pop(void);
+
 
 int main(int argc, char** argv) {
     
@@ -91,3 +104,39 @@ void* handel_client(void* arg){
     }
     pthread_exit(NULL);
 }
+
+
+/*  Function to add an element to the stack */
+void push (int num)
+{
+    
+    if (s.top == (MAXSIZE - 1))
+    {
+        syslog(LOG_NOTICE,"STACK IS FULL!! \n");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        s.top = s.top + 1;
+        s.stk[s.top] = num;
+    }
+    return;
+}
+/*  Function to delete an element from the stack */
+int pop ()
+{
+    int num;
+    if (s.top == - 1)
+    {
+        perror("Stack is Empty\n");
+        return (s.top);
+    }
+    else
+    {
+        num = s.stk[s.top];
+        
+        s.top = s.top - 1;
+    }
+    return(num);
+}
+
