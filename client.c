@@ -45,15 +45,13 @@ int main(int argc, char** argv) {
                 close(client_socket);
                 printf("Done \n");
                 exit(EXIT_SUCCESS);
+                
             }
+            read(client_socket, input , sizeof(char));
             i++;
             
         }
-        // get the result
-        read(client_socket, input , sizeof(char));
-        printf("echo : ");
-        // print it
-        printf("%s", input);
+        
         
     }
     
