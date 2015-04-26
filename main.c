@@ -3,7 +3,7 @@
  Luis Valenzuela
  Abdulaziz Alhawas
  Ahmad Meer
- 
+
  */
 
 
@@ -18,6 +18,7 @@ struct stack
 };
 typedef struct stack STACK;
 STACK s;
+pthread_mutex_t * mutex;
 
 void push(int);
 int  pop(void);
@@ -27,13 +28,13 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 int main(int argc, char** argv) {
-    
+
     // start the daemon
     daemon_start();
     struct sockaddr_in server_address;
     int server_socket;
-    
-    
+
+
     bzero(&server_address, sizeof(server_address));
     //create unammed socket and name it
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_t threads[100];
 
-    
+
     //binding unnamed socket
     if (bind(server_socket, (struct sockaddr * )&server_address, sizeof(server_address)) ==-1){
         syslog(LOG_NOTICE, "server with PID %d: error binding socket\n", getpid() );
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
     while(1){
         int client_socket = accept(server_socket, NULL, NULL);
         syslog(LOG_NOTICE,"server with PID %d: accepted client\n", getpid());
-        
+
         //create the thread to handel
         pthread_t threads [1];
         // Launch threads
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
                 exit(EXIT_FAILURE);
             }
         }
-        
+
         // Wait for threads to finish
         for(int i=0; i<sizeof(threads)/sizeof(threads[0]); ++i) {
             if(pthread_join(threads[i],NULL) != 0) {
@@ -81,32 +82,32 @@ int main(int argc, char** argv) {
                 exit(EXIT_FAILURE);
             }
         }
-        
+
         // Release the mutex
         if(pthread_mutex_destroy(&mutex) != 0) {
             perror("Destroy mutex");
             exit(EXIT_FAILURE);
         }
-        
-        
+
+
     }
 }
 
 //handel client
 void* handel_client(void* arg){
-    
+
     pthread_mutex_lock(&mutex);
     //connect socket to client
     int client_socket = *((int*)arg);
     char input;
     int counter =0;
     int num =0;
-    
+
     // read char from client
     read(client_socket,&input,sizeof(char));
     num = atoi(&input);
-    
-    
+
+
     while (num != 1) {
         syslog(LOG_NOTICE,"input is %d \n",num);
         push(num);
@@ -120,29 +121,29 @@ void* handel_client(void* arg){
         counter+=1;
     }
     counter = counter -1 ;
-    
+
     // send result to client
     write(client_socket,&counter,sizeof(char));
     syslog(LOG_NOTICE,"result is %d \n",counter);
     pthread_mutex_unlock(&mutex);
     pthread_exit(NULL);
-    
+
     if (close(client_socket)==-1){
         perror("Error Colsing socket");
         exit(EXIT_FAILURE);
     }else{
         syslog(LOG_NOTICE,"Closed socket to client");
     }
-    
-    
-    
+
+
+
 }
 
 
 /*  Function to add an element to the stack */
 void push (int num)
 {
-    
+
     if (s.top == (MAXSIZE - 1))
     {
         syslog(LOG_NOTICE,"STACK IS FULL!! \n");
@@ -167,7 +168,7 @@ int pop ()
     else
     {
         num = s.stk[s.top];
-        
+
         s.top = s.top - 1;
     }
     return(num);
