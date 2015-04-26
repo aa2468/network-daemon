@@ -9,7 +9,7 @@
 
 
 #include "daemon.c"
-#define MAXSIZE 20
+#define MAXSIZE 100
 
 struct stack
 {
@@ -18,7 +18,7 @@ struct stack
 };
 typedef struct stack STACK;
 STACK s;
-pthread_mutex_t * mutex;
+int storage [100];
 
 void push(int);
 int  pop(void);
@@ -107,24 +107,30 @@ void* handel_client(void* arg){
     read(client_socket,&input,sizeof(char));
     num = atoi(&input);
 
-
     while (num != 1) {
         syslog(LOG_NOTICE,"input is %d \n",num);
-        push(num);
         if (num % 2 == 0) { //if even
             num = num / 2;
         } else { //if odd
             num = num * 3 + 1;
         }
+        
+        push(num);
+        
     }
-    while (pop()!= -1) {
+    
+        
+    while ((num =pop())!= -1) {
+        storage[num] = counter;
         counter+=1;
+        
     }
-    counter = counter -1 ;
+
 
     // send result to client
+    syslog(LOG_NOTICE,"result is %d \n",counter-1);
     write(client_socket,&counter,sizeof(char));
-    syslog(LOG_NOTICE,"result is %d \n",counter);
+
     pthread_mutex_unlock(&mutex);
     pthread_exit(NULL);
 
@@ -133,10 +139,11 @@ void* handel_client(void* arg){
         exit(EXIT_FAILURE);
     }else{
         syslog(LOG_NOTICE,"Closed socket to client");
+
     }
 
 
-
+    
 }
 
 
